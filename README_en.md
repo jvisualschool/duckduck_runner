@@ -1,5 +1,7 @@
 # DUCKDUCK RUNNER
 
+## Demo : https://ai.jvisualschool.com/duckduck_runner/
+
 ## 🚀 Project Overview
 DUCKDUCK RUNNER is a simple, retro-style endless runner game inspired by the classic Chrome Dinosaur game. Play as a duck-like creature, jump over cacti, duck under pterodactyls, and collect power-ups to achieve the highest score!
 

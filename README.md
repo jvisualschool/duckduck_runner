@@ -1,5 +1,7 @@
 # DUCKDUCK RUNNER
 
+## Demo : https://ai.jvisualschool.com/duckduck_runner/
+
 ## 🚀 프로젝트 개요
 DUCKDUCK RUNNER는 고전 크롬 공룡 게임에서 영감을 받은 간단한 레트로 스타일의 무한 러너 게임입니다. 오리 같은 캐릭터가 되어 선인장을 뛰어넘고, 익룡 아래로 몸을 숙이며, 파워업 아이템을 모아 최고 점수를 달성하세요!
 

@@ -1,0 +1,768 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dinosaur Runner Game</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #d3d3d3;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            font-family: 'Press Start 2P', cursive;
+            overflow: hidden;
+            image-rendering: pixelated;
+            image-rendering: -moz-crisp-edges;
+            image-rendering: crisp-edges;
+        }
+
+        .device-frame {
+            background: #ce1e28;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.3), inset 0 0 10px rgba(0,0,0,0.5);
+            position: relative;
+        }
+
+        .device-frame::before {
+            content: 'DUCKDUCK RUNNER';
+            position: absolute;
+            top: 15px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: #fff;
+            font-size: 14px;
+            letter-spacing: 2px;
+        }
+
+        .game-container {
+            position: relative;
+            background: white;
+            border: 2px solid #535353;
+        }
+
+        #gameCanvas {
+            display: block;
+            background: white;
+            image-rendering: pixelated;
+            image-rendering: -moz-crisp-edges;
+            image-rendering: crisp-edges;
+        }
+
+        .game-ui {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            font-size: 12px;
+            color: #535353;
+            font-family: 'Press Start 2P', cursive;
+        }
+
+        .game-over {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            color: #535353;
+            display: none;
+        }
+
+        .game-over h2 {
+            font-size: 20px;
+            margin-bottom: 15px;
+            font-family: 'Press Start 2P', cursive;
+        }
+
+        .game-over p {
+            font-size: 10px;
+            margin-bottom: 15px;
+            font-family: 'Press Start 2P', cursive;
+        }
+
+        .instructions {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 8px;
+            color: #999;
+            text-align: center;
+            font-family: 'Press Start 2P', cursive;
+            line-height: 1.8;
+        }
+        
+        .high-score-message {
+            position: absolute;
+            top: 35%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 16px;
+            color: #ff4500;
+            display: none;
+            text-align: center;
+            text-shadow: 2px 2px #fff;
+        }
+
+    </style>
+</head>
+<body>
+    <div class="device-frame">
+        <div class="game-container">
+            <canvas id="gameCanvas" width="480" height="360"></canvas>
+            <div class="game-ui">
+                <div>HI <span id="hiScore">00000</span></div>
+                <div><span id="currentScore">00000</span></div>
+            </div>
+            <div id="jumpBoostTimerDisplay" style="position: absolute; top: 20px; left: 20px; font-size: 12px; color: #0000FF;"></div>
+            <div class="game-over" id="gameOver">
+                <h2>G A M E<br>O V E R</h2>
+                <p>Press SPACE to restart</p>
+            </div>
+            <div class="high-score-message" id="highScoreMessage">
+                NEW HIGH SCORE!
+            </div>
+            <div class="instructions" id="instructions">
+                <div>Press SPACE to jump, ↓ to duck</div>
+                <div>Press M to mute/unmute</div>
+                <div>Press SPACE to start</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const gameOverElement = document.getElementById('gameOver');
+        const currentScoreElement = document.getElementById('currentScore');
+        const hiScoreElement = document.getElementById('hiScore');
+        const instructionsElement = document.getElementById('instructions');
+        const highScoreMessageElement = document.getElementById('highScoreMessage');
+        const jumpBoostTimerDisplay = document.getElementById('jumpBoostTimerDisplay');
+
+        // Game variables
+        let gameState = 'waiting'; // 'waiting', 'playing', 'gameOver'
+        let gameSpeed = 3;
+        let gravity = 0.45;
+        let score = 0;
+        let hiScore = localStorage.getItem('dinoHiScore') || 0;
+        let gameTime = 0;
+        let dayNightCycle = 0;
+        let isNight = false;
+        let isJumpBoostActive = false;
+        let jumpBoostTimer = 0;
+        let hasSpawnedSpring = false; // New variable to track spring spawn
+
+        // Audio Context for sound effects
+        let audioContext;
+        let isMuted = false;
+
+        // Fireworks
+        const fireworks = [];
+
+        // Initialize audio context
+        function initAudio() {
+            if (!audioContext) {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            }
+        }
+
+        // Generate jump sound
+        function playJumpSound() {
+            if (isMuted || !audioContext) return;
+            
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.frequency.setValueAtTime(300, audioContext.currentTime);
+            oscillator.frequency.exponentialRampToValueAtTime(150, audioContext.currentTime + 0.1);
+            
+            gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.1);
+            
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + 0.1);
+        }
+
+        // Generate game over sound
+        function playGameOverSound() {
+            if (isMuted || !audioContext) return;
+            
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.frequency.setValueAtTime(200, audioContext.currentTime);
+            oscillator.frequency.exponentialRampToValueAtTime(100, audioContext.currentTime + 0.3);
+            
+            gainNode.gain.setValueAtTime(0.15, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+            
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + 0.3);
+        }
+
+        // Generate score sound
+        function playScoreSound() {
+            if (isMuted || !audioContext) return;
+            
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
+            oscillator.frequency.exponentialRampToValueAtTime(1000, audioContext.currentTime + 0.1);
+            
+            gainNode.gain.setValueAtTime(0.05, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.1);
+            
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + 0.1);
+        }
+
+        // Update hi score display
+        hiScoreElement.textContent = String(hiScore).padStart(5, '0');
+
+        // Player object
+        const player = {
+            x: 50,
+            y: canvas.height - 99,
+            width: 88,
+            height: 92,
+            velocityY: 0,
+            isJumping: false,
+            isDucking: false,
+            animFrame: 0,
+            animSpeed: 0.15,
+            groundY: canvas.height - 99
+        };
+
+        // Obstacles array
+        const obstacles = [];
+        let obstacleTimer = 0;
+        let obstacleInterval = 150;
+
+        // Ground elements
+        const groundElements = [];
+        for (let i = 0; i < canvas.width + 50; i += 50) {
+            groundElements.push({ x: i, y: canvas.height - 8 });
+        }
+
+        // Cloud elements
+        const clouds = [];
+        for (let i = 0; i < 6; i++) {
+            clouds.push({
+                x: Math.random() * canvas.width,
+                y: Math.random() * 80 + 30,
+                width: 60,
+                height: 20,
+                speed: 0.5
+            });
+        }
+
+        // Star elements
+        const stars = [];
+        for (let i = 0; i < 20; i++) {
+            stars.push({
+                x: Math.random() * canvas.width,
+                y: Math.random() * 120 + 20,
+                size: Math.random() * 3 + 1,
+                speed: 0.2 + Math.random() * 0.3,
+                twinkle: Math.random() * 360
+            });
+        }
+
+        // Input handling
+        document.addEventListener('keydown', (e) => {
+            if (e.code === 'Space') {
+                e.preventDefault();
+                initAudio(); // Initialize audio on first user interaction
+                if (gameState === 'waiting' || gameState === 'gameOver') {
+                    startGame();
+                } else if (gameState === 'playing' && !player.isJumping) {
+                    player.velocityY = isJumpBoostActive ? -13 * 1.5 : -13; // Apply 50% boost
+                    player.isJumping = true;
+                    playJumpSound();
+                }
+            } else if (e.code === 'ArrowDown') {
+                if (gameState === 'playing') {
+                    player.isDucking = true;
+                }
+            } else if (e.code === 'KeyM') {
+                // Toggle mute with M key
+                isMuted = !isMuted;
+            }
+        });
+
+        document.addEventListener('keyup', (e) => {
+            if (e.code === 'ArrowDown') {
+                player.isDucking = false;
+            }
+        });
+
+        function startGame() {
+            gameState = 'playing';
+            gameSpeed = 3;
+            score = 0;
+            gameTime = 0;
+            obstacles.length = 0;
+            fireworks.length = 0;
+            isJumpBoostActive = false;
+            jumpBoostTimer = 0;
+            hasSpawnedSpring = false; // Reset spring spawn flag
+            obstacleTimer = 0;
+            player.y = player.groundY;
+            player.velocityY = 0;
+            player.isJumping = false;
+            player.isDucking = false;
+            gameOverElement.style.display = 'none';
+            highScoreMessageElement.style.display = 'none';
+            instructionsElement.style.display = 'none';
+            jumpBoostTimerDisplay.textContent = ''; // Clear timer display
+        }
+
+        function gameOver() {
+            gameState = 'gameOver';
+            playGameOverSound();
+            if (score > hiScore) {
+                hiScore = score;
+                localStorage.setItem('dinoHiScore', hiScore);
+                hiScoreElement.textContent = String(hiScore).padStart(5, '0');
+                highScoreMessageElement.style.display = 'block';
+                createFireworks(canvas.width / 2, canvas.height / 2, 100);
+                setTimeout(() => createFireworks(canvas.width / 4, canvas.height / 4, 100), 500);
+                setTimeout(() => createFireworks(canvas.width * 3 / 4, canvas.height / 4, 100), 1000);
+            }
+            gameOverElement.style.display = 'block';
+            instructionsElement.style.display = 'block';
+        }
+
+        // Drawing functions
+        function drawPlayer() {
+            ctx.fillStyle = '#535353';
+            const x = player.x;
+            const y = player.y + 45; // Offset to align with old dino's position
+
+            if (player.isDucking) {
+                const duckY = player.y + 60;
+                const bodyWidth = 59; // 50% of original 118
+                
+                // Tail
+                ctx.fillRect(x, duckY + 10, 15, 8);
+                // Body
+                ctx.fillRect(x + 15, duckY + 5, bodyWidth, 20);
+                // Head
+                ctx.fillRect(x + 15 + bodyWidth - 20, duckY - 5, 20, 10);
+                // Eye
+                ctx.fillStyle = '#fff'; // Always use white for eye (becomes black in night mode)
+                ctx.fillRect(x + 15 + bodyWidth - 10, duckY - 2, 4, 4);
+                ctx.fillStyle = '#535353';
+
+            } else {
+                // Head
+                ctx.fillRect(x + 34, y, 44, 18);
+                ctx.fillRect(x + 78, y + 8, 4, 4); // Snout
+                // Eye
+                ctx.fillStyle = '#fff'; // Always use white for eye (becomes black in night mode)
+                ctx.fillRect(x + 60, y + 4, 4, 4);
+                ctx.fillStyle = '#535353';
+                // Body
+                ctx.fillRect(x + 12, y + 18, 40, 16);
+                // Tail
+                ctx.fillRect(x, y + 22, 12, 4);
+                // Arm
+                ctx.fillRect(x + 30, y + 22, 4, 8);
+
+                if (player.isJumping) {
+                    // Legs
+                    ctx.fillRect(x + 16, y + 34, 8, 12);
+                    ctx.fillRect(x + 32, y + 34, 8, 12);
+                } else {
+                    // Running animation
+                    const legCycle = Math.floor(player.animFrame * 4) % 2;
+                    if (legCycle === 0) {
+                        ctx.fillRect(x + 16, y + 34, 8, 12); // Leg 1
+                        ctx.fillRect(x + 32, y + 34, 8, 8);  // Leg 2
+                    } else {
+                        ctx.fillRect(x + 16, y + 34, 8, 8);  // Leg 1
+                        ctx.fillRect(x + 32, y + 34, 8, 12); // Leg 2
+                    }
+                }
+            }
+            
+            player.animFrame += player.animSpeed;
+        }
+
+        function drawObstacles() {
+            ctx.fillStyle = '#535353';
+            obstacles.forEach(obstacle => {
+                if (obstacle.type === 'cactus') {
+                    switch (obstacle.subtype) {
+                        case 'small':
+                            // Draw small cactus
+                            ctx.fillRect(obstacle.x, obstacle.y, obstacle.width, obstacle.height);
+                            ctx.fillRect(obstacle.x + 5, obstacle.y - 8, 6, 8);
+                            ctx.fillRect(obstacle.x - 4, obstacle.y + 10, 8, 6);
+                            ctx.fillRect(obstacle.x + obstacle.width - 4, obstacle.y + 15, 8, 6);
+                            break;
+                        case 'medium':
+                            // Draw two small cacti
+                            ctx.fillRect(obstacle.x, obstacle.y, 18, 35);
+                            ctx.fillRect(obstacle.x + 5, obstacle.y - 8, 6, 8);
+                            ctx.fillRect(obstacle.x - 4, obstacle.y + 10, 8, 6);
+                            ctx.fillRect(obstacle.x + 20, obstacle.y, 18, 35);
+                            ctx.fillRect(obstacle.x + 25, obstacle.y - 8, 6, 8);
+                            ctx.fillRect(obstacle.x + 20 + 18 - 4, obstacle.y + 15, 8, 6);
+                            break;
+                        case 'large':
+                            // Draw a taller cactus
+                            ctx.fillRect(obstacle.x, obstacle.y, obstacle.width, obstacle.height);
+                            ctx.fillRect(obstacle.x + 8, obstacle.y - 10, 8, 10);
+                            ctx.fillRect(obstacle.x - 6, obstacle.y + 15, 6, 15);
+                            ctx.fillRect(obstacle.x + obstacle.width, obstacle.y + 10, 6, 15);
+                            break;
+                    }
+                } else if (obstacle.type === 'pterodactyl') {
+                    // Draw pterodactyl
+                    ctx.fillRect(obstacle.x, obstacle.y, obstacle.width, obstacle.height);
+                    ctx.fillRect(obstacle.x - 10, obstacle.y + 4, 16, 3); // left wing
+                    ctx.fillRect(obstacle.x + obstacle.width - 6, obstacle.y + 4, 16, 3); // right wing
+                    ctx.fillRect(obstacle.x + 16, obstacle.y - 4, 8, 8); // head
+                } else if (obstacle.type === 'spring') {
+                    ctx.fillStyle = '#0000FF'; // Blue color for spring
+                    ctx.fillRect(obstacle.x, obstacle.y, obstacle.width, obstacle.height);
+                }
+            });
+        }
+
+        function drawGround() {
+            ctx.strokeStyle = '#535353';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(0, canvas.height - 8);
+            
+            groundElements.forEach(ground => {
+                ctx.lineTo(ground.x, ground.y);
+                ctx.lineTo(ground.x + 3, ground.y);
+                ctx.lineTo(ground.x + 6, ground.y + 2);
+                ctx.lineTo(ground.x + 9, ground.y);
+                ctx.lineTo(ground.x + 15, ground.y);
+            });
+            
+            ctx.stroke();
+        }
+
+        function drawClouds() {
+            if (!isNight) {
+                ctx.fillStyle = '#c0c0c0';
+                clouds.forEach(cloud => {
+                    ctx.fillRect(cloud.x, cloud.y, cloud.width, cloud.height);
+                    ctx.fillRect(cloud.x + 10, cloud.y - 5, 20, 10);
+                    ctx.fillRect(cloud.x + 15, cloud.y + 5, 15, 8);
+                });
+            }
+        }
+
+        function drawStars() {
+            if (isNight) {
+                stars.forEach(star => {
+                    // Twinkling effect
+                    const twinkleIntensity = 0.5 + 0.5 * Math.sin(star.twinkle);
+                    // Use black color since invert filter will make it white in night mode
+                    ctx.fillStyle = `rgba(0, 0, 0, ${twinkleIntensity})`;
+                    
+                    // Draw star as a small cross
+                    ctx.fillRect(star.x - star.size/2, star.y - 1, star.size, 2);
+                    ctx.fillRect(star.x - 1, star.y - star.size/2, 2, star.size);
+                    
+                    if (gameState === 'playing') {
+                        star.twinkle += 0.1;
+                    }
+                });
+            }
+        }
+
+        function drawBackground() {
+            // Day/night cycle
+            if (Math.floor(gameTime / 1000) % 100 === 0 && gameTime % 1000 < 20) {
+                isNight = !isNight;
+            }
+            
+            canvas.style.background = isNight ? '#000' : '#fff';
+            ctx.filter = isNight ? 'invert(1)' : 'invert(0)';
+        }
+
+        // Game logic
+        function updatePlayer() {
+            if (player.isJumping) {
+                player.velocityY += gravity;
+                player.y += player.velocityY;
+                
+                if (player.y >= player.groundY) {
+                    player.y = player.groundY;
+                    player.velocityY = 0;
+                    player.isJumping = false;
+                }
+            }
+        }
+
+        function updateObstacles() {
+            // Move obstacles
+            obstacles.forEach(obstacle => {
+                obstacle.x -= gameSpeed;
+            });
+
+            // Remove off-screen obstacles
+            for (let i = obstacles.length - 1; i >= 0; i--) {
+                if (obstacles[i].x + obstacles[i].width < 0) {
+                    obstacles.splice(i, 1);
+                }
+            }
+
+            // Add new obstacles
+            obstacleTimer++;
+            if (obstacleTimer >= obstacleInterval) {
+                const randomVal = Math.random();
+                let newObstacle = null;
+
+                // Force spring as first obstacle if not spawned yet
+                if (!hasSpawnedSpring) {
+                    newObstacle = {
+                        type: 'spring',
+                        x: canvas.width,
+                        y: canvas.height - 30, // Adjust Y to be on the ground
+                        width: 20,
+                        height: 20,
+                        isCollected: false
+                    };
+                    hasSpawnedSpring = true;
+                } else if (randomVal < 0.6) { // More likely to be a cactus
+                    const cactusTypes = [
+                        { subtype: 'small', width: 18, height: 35, yOffset: 43 },
+                        { subtype: 'medium', width: 38, height: 35, yOffset: 43 }, // Two small cacti side by side
+                        { subtype: 'large', width: 24, height: 50, yOffset: 58 } // Taller cactus
+                    ];
+                    const randomCactus = cactusTypes[Math.floor(Math.random() * cactusTypes.length)];
+                    newObstacle = {
+                        type: 'cactus',
+                        subtype: randomCactus.subtype,
+                        x: canvas.width,
+                        y: canvas.height - randomCactus.yOffset,
+                        width: randomCactus.width,
+                        height: randomCactus.height
+                    };
+                } else { // Pterodactyl
+                    const pteroHeight = [canvas.height - 45, canvas.height - 60, canvas.height - 75][Math.floor(Math.random() * 3)];
+                    newObstacle = {
+                        type: 'pterodactyl',
+                        x: canvas.width,
+                        y: pteroHeight,
+                        width: 24,
+                        height: 16
+                    };
+                }
+
+                if (newObstacle) {
+                    obstacles.push(newObstacle);
+                }
+                obstacleTimer = 0;
+                obstacleInterval = 80 + Math.random() * 70; // Randomize next obstacle time
+            }
+        }
+
+        function updateGround() {
+            groundElements.forEach(ground => {
+                ground.x -= gameSpeed;
+                if (ground.x <= -50) {
+                    ground.x = canvas.width;
+                }
+            });
+        }
+
+        function updateClouds() {
+            clouds.forEach(cloud => {
+                cloud.x -= cloud.speed;
+                if (cloud.x <= -cloud.width) {
+                    cloud.x = canvas.width;
+                    cloud.y = Math.random() * 50 + 20;
+                }
+            });
+        }
+
+        function updateStars() {
+            stars.forEach(star => {
+                star.x -= star.speed;
+                if (star.x <= -star.size) {
+                    star.x = canvas.width;
+                    star.y = Math.random() * 80 + 10;
+                }
+            });
+        }
+
+        function checkCollisions() {
+            const yOffset = 45;
+            const playerRect = {
+                x: player.x,
+                y: player.y,
+                width: player.width,
+                height: player.height
+            };
+
+            if (player.isDucking) {
+                playerRect.x = player.x;
+                playerRect.y = player.y + 55;
+                playerRect.width = 74;
+                playerRect.height = 30;
+            } else {
+                playerRect.x = player.x + 12;
+                playerRect.y = player.y + yOffset;
+                playerRect.width = 66;
+                playerRect.height = 46;
+            }
+
+            // Iterate backward to safely remove elements
+            for (let i = obstacles.length - 1; i >= 0; i--) {
+                const obstacle = obstacles[i];
+                if (playerRect.x < obstacle.x + obstacle.width &&
+                    playerRect.x + playerRect.width > obstacle.x &&
+                    playerRect.y < obstacle.y + obstacle.height &&
+                    playerRect.y + playerRect.height > obstacle.y) {
+                    
+                    if (obstacle.type === 'spring') {
+                        isJumpBoostActive = true;
+                        jumpBoostTimer = 600; // 10 seconds * 60 frames/sec
+                        jumpBoostTimerDisplay.textContent = `JUMP BOOST: ${Math.ceil(jumpBoostTimer / 60)}s`;
+                        obstacles.splice(i, 1); // Remove the collected spring
+                        // Optional: play a sound or show a temporary message
+                    } else { // Collision with cactus or pterodactyl
+                        gameOver();
+                    }
+                }
+            }
+        }
+
+        function updateScore() {
+            if (gameState === 'playing') {
+                const newScore = Math.floor(gameTime / 10);
+                
+                // Play score sound every 100 points
+                if (newScore > 0 && newScore % 100 === 0 && newScore > score) {
+                    playScoreSound();
+                }
+                
+                score = newScore;
+                currentScoreElement.textContent = String(score).padStart(5, '0');
+                
+                // Increase speed every 100 points
+                gameSpeed = 3 + Math.floor(score / 100) * 0.5;
+                
+                gameTime++;
+            }
+        }
+
+        function createFireworks(x, y, count) {
+            for (let i = 0; i < count; i++) {
+                const angle = Math.random() * Math.PI * 2;
+                const speed = Math.random() * 5 + 2;
+                fireworks.push({
+                    x: x,
+                    y: y,
+                    vx: Math.cos(angle) * speed,
+                    vy: Math.sin(angle) * speed,
+                    color: `hsl(${Math.random() * 360}, 100%, 50%)`,
+                    size: Math.random() * 3 + 1,
+                    lifespan: 60 + Math.random() * 30, // in frames
+                    gravity: 0.1
+                });
+            }
+        }
+
+        function updateFireworks() {
+            for (let i = fireworks.length - 1; i >= 0; i--) {
+                const p = fireworks[i];
+                p.x += p.vx;
+                p.y += p.vy;
+                p.vy += p.gravity;
+                p.lifespan--;
+                if (p.lifespan <= 0) {
+                    fireworks.splice(i, 1);
+                }
+            }
+        }
+
+        function drawFireworks() {
+            fireworks.forEach(p => {
+                ctx.fillStyle = p.color;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                ctx.fill();
+            });
+        }
+
+        // Main game loop
+        function gameLoop() {
+            // Clear canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            if (gameState === 'playing') {
+                updatePlayer();
+                updateObstacles();
+                updateGround();
+                updateClouds();
+                updateStars();
+                checkCollisions();
+                updateScore();
+                
+                if (isJumpBoostActive) {
+                    jumpBoostTimer--;
+                    jumpBoostTimerDisplay.textContent = `JUMP BOOST: ${Math.ceil(jumpBoostTimer / 60)}s`;
+                    if (jumpBoostTimer <= 0) {
+                        isJumpBoostActive = false;
+                        jumpBoostTimer = 0;
+                        jumpBoostTimerDisplay.textContent = ''; // Clear timer display
+                    }
+                }
+
+            } else {
+                updateGround();
+                updateClouds();
+                updateStars();
+            }
+
+            drawBackground();
+            drawClouds();
+            drawStars();
+            drawGround();
+            drawObstacles();
+            drawPlayer();
+            
+            if (fireworks.length > 0) {
+                updateFireworks();
+                drawFireworks();
+            }
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        // Start the game loop
+        gameLoop();
+    </script>
+</body>
+</html>

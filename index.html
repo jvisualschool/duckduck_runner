@@ -2,8 +2,8 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dinosaur Runner Game</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>DuckDuck Runner Game - PC & Mobile</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
         
@@ -11,6 +11,13 @@
             margin: 0;
             padding: 0;
             box-sizing: border-box;
+        }
+        
+        body, html {
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            -webkit-tap-highlight-color: transparent;
+            pointer-events: auto;
         }
 
         body {
@@ -24,25 +31,28 @@
             image-rendering: pixelated;
             image-rendering: -moz-crisp-edges;
             image-rendering: crisp-edges;
+            -webkit-text-size-adjust: none;
         }
 
         .device-frame {
             background: #ce1e28;
-            border-radius: 20px;
-            padding: 40px;
-            box-shadow: 0 10px 20px rgba(0,0,0,0.3), inset 0 0 10px rgba(0,0,0,0.5);
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3), inset 0 0 10px rgba(0,0,0,0.5);
             position: relative;
+            max-width: 100vw;
+            max-height: 100vh;
         }
 
         .device-frame::before {
             content: 'DUCKDUCK RUNNER';
             position: absolute;
-            top: 15px;
+            top: 8px;
             left: 50%;
             transform: translateX(-50%);
             color: #fff;
-            font-size: 14px;
-            letter-spacing: 2px;
+            font-size: 10px;
+            letter-spacing: 1px;
         }
 
         .game-container {
@@ -57,13 +67,15 @@
             image-rendering: pixelated;
             image-rendering: -moz-crisp-edges;
             image-rendering: crisp-edges;
+            max-width: 100%;
+            height: auto;
         }
 
         .game-ui {
             position: absolute;
-            top: 20px;
-            right: 20px;
-            font-size: 12px;
+            top: 10px;
+            right: 15px;
+            font-size: 10px;
             color: #535353;
             font-family: 'Press Start 2P', cursive;
         }
@@ -79,23 +91,23 @@
         }
 
         .game-over h2 {
-            font-size: 20px;
+            font-size: 16px;
             margin-bottom: 15px;
             font-family: 'Press Start 2P', cursive;
         }
 
         .game-over p {
-            font-size: 10px;
+            font-size: 8px;
             margin-bottom: 15px;
             font-family: 'Press Start 2P', cursive;
         }
 
         .instructions {
             position: absolute;
-            bottom: 20px;
+            bottom: 15px;
             left: 50%;
             transform: translateX(-50%);
-            font-size: 8px;
+            font-size: 6px;
             color: #999;
             text-align: center;
             font-family: 'Press Start 2P', cursive;
@@ -107,11 +119,106 @@
             top: 35%;
             left: 50%;
             transform: translate(-50%, -50%);
-            font-size: 16px;
+            font-size: 14px;
             color: #ff4500;
             display: none;
             text-align: center;
             text-shadow: 2px 2px #fff;
+        }
+
+        .mobile-controls {
+            position: absolute;
+            bottom: 15px;
+            left: 0;
+            right: 0;
+            display: flex;
+            justify-content: space-between;
+            padding: 0 15px;
+            z-index: 1000;
+            pointer-events: auto;
+        }
+
+        .control-btn {
+            background: rgba(83, 83, 83, 0.9);
+            border: 1px solid #fff;
+            border-radius: 8px;
+            padding: 10px 15px;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 8px;
+            color: white;
+            cursor: pointer;
+            touch-action: manipulation;
+            user-select: none;
+            -webkit-user-select: none;
+            -webkit-touch-callout: none;
+            min-width: 50px;
+            min-height: 30px;
+            pointer-events: auto;
+            z-index: 1001;
+            position: relative;
+        }
+
+        .control-btn:active {
+            background: rgba(83, 83, 83, 1);
+            transform: scale(0.95);
+        }
+
+        .jump-btn {
+            background: rgba(0, 120, 0, 0.8);
+        }
+
+        .jump-btn:active {
+            background: rgba(0, 120, 0, 1);
+        }
+
+        .duck-btn {
+            background: rgba(120, 0, 0, 0.8);
+        }
+
+        .duck-btn:active {
+            background: rgba(120, 0, 0, 1);
+            transform: scale(0.95);
+        }
+
+        @keyframes blink {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0.3; }
+        }
+
+        /* 모바일 최적화 */
+        @media (max-width: 500px) {
+            .device-frame {
+                padding: 15px;
+                border-radius: 10px;
+            }
+            
+            .device-frame::before {
+                font-size: 8px;
+                top: 5px;
+            }
+            
+            #gameCanvas {
+                width: 100%;
+                height: auto;
+            }
+            
+            .game-ui {
+                font-size: 8px;
+                top: 8px;
+                right: 10px;
+            }
+            
+            .control-btn {
+                padding: 8px 10px;
+                font-size: 6px;
+                min-width: 40px;
+                min-height: 25px;
+            }
+            
+            .mobile-controls {
+                bottom: 10px;
+                padding: 0 10px;
+            }
         }
 
     </style>
@@ -124,23 +231,33 @@
                 <div>HI <span id="hiScore">00000</span></div>
                 <div><span id="currentScore">00000</span></div>
             </div>
-            <div id="jumpBoostTimerDisplay" style="position: absolute; top: 20px; left: 20px; font-size: 12px; color: #0000FF;"></div>
+            <div id="jumpBoostTimerDisplay" style="position: absolute; top: 15px; left: 15px; font-size: 10px; color: #0000FF;"></div>
             <div class="game-over" id="gameOver">
                 <h2>G A M E<br>O V E R</h2>
-                <p>Press SPACE to restart</p>
+                <p>Tap JUMP to restart</p>
             </div>
             <div class="high-score-message" id="highScoreMessage">
                 NEW HIGH SCORE!
             </div>
             <div class="instructions" id="instructions">
-                <div>Press SPACE to jump, ↓ to duck</div>
-                <div>Press M to mute/unmute</div>
-                <div>Press SPACE to start</div>
+                <div>Tap JUMP to jump, DUCK to duck</div>
+                <div style="color: #ff4500; font-size: 12px; margin-top: 10px; animation: blink 1s infinite;">TAP JUMP OR SCREEN TO START</div>
+            </div>
+            <div class="mobile-controls">
+                <button class="control-btn jump-btn" id="jumpBtn">JUMP</button>
+                <button class="control-btn duck-btn" id="duckBtn">DUCK</button>
             </div>
         </div>
     </div>
 
     <script>
+        // 실제 게임 함수들
+        function testJump() {
+            console.log('Jump button clicked - starting game');
+            actualJump();
+        }
+        
+
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
         const gameOverElement = document.getElementById('gameOver');
@@ -149,6 +266,66 @@
         const instructionsElement = document.getElementById('instructions');
         const highScoreMessageElement = document.getElementById('highScoreMessage');
         const jumpBoostTimerDisplay = document.getElementById('jumpBoostTimerDisplay');
+        
+        // 이벤트 리스너를 window.onload에서 설정
+        window.addEventListener('load', function() {
+            console.log('Window loaded, setting up events');
+            
+            const jumpButton = document.getElementById('jumpBtn');
+            const duckButton = document.getElementById('duckBtn');
+            
+            console.log('Buttons found:', jumpButton, duckButton);
+            
+            if (jumpButton) {
+                // 모든 가능한 이벤트에 대해 설정
+                jumpButton.addEventListener('click', testJump, false);
+                jumpButton.addEventListener('touchstart', testJump, false);
+                jumpButton.addEventListener('touchend', function(e) { e.preventDefault(); }, false);
+                jumpButton.addEventListener('mousedown', testJump, false);
+                
+                // 직접 이벤트 핸들러도 설정
+                jumpButton.onclick = testJump;
+                jumpButton.ontouchstart = testJump;
+                
+                console.log('Jump button events set up');
+            }
+            
+            if (duckButton) {
+                // 터치 이벤트 - 누르고 있는 동안 계속 엎드리기
+                duckButton.addEventListener('touchstart', function(e) {
+                    e.preventDefault();
+                    console.log('Duck touchstart - start ducking');
+                    handleDuckStart();
+                }, false);
+                
+                duckButton.addEventListener('touchend', function(e) {
+                    e.preventDefault();
+                    console.log('Duck touchend - stop ducking');
+                    handleDuckEnd();
+                }, false);
+                
+                // 마우스 이벤트 - PC 호환성
+                duckButton.addEventListener('mousedown', function(e) {
+                    e.preventDefault();
+                    console.log('Duck mousedown - start ducking');
+                    handleDuckStart();
+                }, false);
+                
+                duckButton.addEventListener('mouseup', function(e) {
+                    e.preventDefault();
+                    console.log('Duck mouseup - stop ducking');
+                    handleDuckEnd();
+                }, false);
+                
+                // 마우스가 버튼 영역을 벗어날 때도 엎드리기 해제
+                duckButton.addEventListener('mouseleave', function(e) {
+                    console.log('Duck mouseleave - stop ducking');
+                    handleDuckEnd();
+                }, false);
+                
+                console.log('Duck button events set up');
+            }
+        });
 
         // Game variables
         let gameState = 'waiting'; // 'waiting', 'playing', 'gameOver'
@@ -161,7 +338,7 @@
         let isNight = false;
         let isJumpBoostActive = false;
         let jumpBoostTimer = 0;
-        let hasSpawnedSpring = false; // New variable to track spring spawn
+        let hasSpawnedSpring = false;
 
         // Audio Context for sound effects
         let audioContext;
@@ -173,7 +350,15 @@
         // Initialize audio context
         function initAudio() {
             if (!audioContext) {
-                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                try {
+                    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                    // Safari에서 suspended 상태일 수 있으므로 resume 시도
+                    if (audioContext.state === 'suspended') {
+                        audioContext.resume();
+                    }
+                } catch(e) {
+                    console.log('Audio context creation failed:', e);
+                }
             }
         }
 
@@ -289,35 +474,84 @@
             });
         }
 
-        // Input handling
+
+
+        function actualJump() {
+            console.log('actualJump called, gameState:', gameState);
+            
+            // 오디오 컨텍스트 초기화를 비동기로 처리
+            if (!audioContext) {
+                try {
+                    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                    console.log('Audio context created');
+                } catch(e) {
+                    console.log('Audio context creation failed:', e);
+                }
+            }
+            
+            if (gameState === 'waiting' || gameState === 'gameOver') {
+                console.log('Starting game...');
+                startGame();
+            } else if (gameState === 'playing' && !player.isJumping) {
+                console.log('Player jumping...');
+                player.velocityY = isJumpBoostActive ? -13 * 1.5 : -13;
+                player.isJumping = true;
+                playJumpSound();
+            }
+        }
+
+        function handleJump() {
+            actualJump();
+        }
+
+        function handleDuckStart() {
+            if (gameState === 'playing') {
+                player.isDucking = true;
+            }
+        }
+
+        function handleDuckEnd() {
+            player.isDucking = false;
+        }
+
+        function handleQuickDuck() {
+            console.log('Quick duck for click events');
+            handleDuckStart();
+            setTimeout(handleDuckEnd, 200);
+        }
+
+        // 전체 화면 터치로도 게임 시작 가능
+        document.addEventListener('touchstart', function(e) {
+            if (gameState === 'waiting') {
+                console.log('Screen touched, starting game');
+                handleJump();
+            }
+        });
+
+
+        // PC/모바일 모두 지원하는 키보드 컨트롤
         document.addEventListener('keydown', (e) => {
-            if (e.code === 'Space') {
+            console.log('Key pressed:', e.code);
+            if (e.code === 'Space' || e.key === ' ') {
                 e.preventDefault();
-                initAudio(); // Initialize audio on first user interaction
-                if (gameState === 'waiting' || gameState === 'gameOver') {
-                    startGame();
-                } else if (gameState === 'playing' && !player.isJumping) {
-                    player.velocityY = isJumpBoostActive ? -13 * 1.5 : -13; // Apply 50% boost
-                    player.isJumping = true;
-                    playJumpSound();
-                }
-            } else if (e.code === 'ArrowDown') {
-                if (gameState === 'playing') {
-                    player.isDucking = true;
-                }
-            } else if (e.code === 'KeyM') {
-                // Toggle mute with M key
-                isMuted = !isMuted;
+                console.log('Space key - calling actualJump');
+                actualJump();
+            } else if (e.code === 'ArrowDown' || e.key === 'ArrowDown') {
+                e.preventDefault();
+                console.log('Down arrow - calling handleDuckStart');
+                handleDuckStart();
             }
         });
 
         document.addEventListener('keyup', (e) => {
-            if (e.code === 'ArrowDown') {
-                player.isDucking = false;
+            if (e.code === 'ArrowDown' || e.key === 'ArrowDown') {
+                e.preventDefault();
+                handleDuckEnd();
             }
         });
 
         function startGame() {
+            console.log('startGame() called');
             gameState = 'playing';
             gameSpeed = 3;
             score = 0;
@@ -326,7 +560,7 @@
             fireworks.length = 0;
             isJumpBoostActive = false;
             jumpBoostTimer = 0;
-            hasSpawnedSpring = false; // Reset spring spawn flag
+            hasSpawnedSpring = false;
             obstacleTimer = 0;
             player.y = player.groundY;
             player.velocityY = 0;
@@ -335,7 +569,8 @@
             gameOverElement.style.display = 'none';
             highScoreMessageElement.style.display = 'none';
             instructionsElement.style.display = 'none';
-            jumpBoostTimerDisplay.textContent = ''; // Clear timer display
+            jumpBoostTimerDisplay.textContent = '';
+            console.log('Game started! gameState:', gameState);
         }
 
         function gameOver() {
@@ -358,11 +593,11 @@
         function drawPlayer() {
             ctx.fillStyle = '#535353';
             const x = player.x;
-            const y = player.y + 45; // Offset to align with old dino's position
+            const y = player.y + 45;
 
             if (player.isDucking) {
                 const duckY = player.y + 60;
-                const bodyWidth = 59; // 50% of original 118
+                const bodyWidth = 59;
                 
                 // Tail
                 ctx.fillRect(x, duckY + 10, 15, 8);
@@ -371,16 +606,16 @@
                 // Head
                 ctx.fillRect(x + 15 + bodyWidth - 20, duckY - 5, 20, 10);
                 // Eye
-                ctx.fillStyle = '#fff'; // Always use white for eye (becomes black in night mode)
+                ctx.fillStyle = '#fff';
                 ctx.fillRect(x + 15 + bodyWidth - 10, duckY - 2, 4, 4);
                 ctx.fillStyle = '#535353';
 
             } else {
                 // Head
                 ctx.fillRect(x + 34, y, 44, 18);
-                ctx.fillRect(x + 78, y + 8, 4, 4); // Snout
+                ctx.fillRect(x + 78, y + 8, 4, 4);
                 // Eye
-                ctx.fillStyle = '#fff'; // Always use white for eye (becomes black in night mode)
+                ctx.fillStyle = '#fff';
                 ctx.fillRect(x + 60, y + 4, 4, 4);
                 ctx.fillStyle = '#535353';
                 // Body
@@ -398,11 +633,11 @@
                     // Running animation
                     const legCycle = Math.floor(player.animFrame * 4) % 2;
                     if (legCycle === 0) {
-                        ctx.fillRect(x + 16, y + 34, 8, 12); // Leg 1
-                        ctx.fillRect(x + 32, y + 34, 8, 8);  // Leg 2
+                        ctx.fillRect(x + 16, y + 34, 8, 12);
+                        ctx.fillRect(x + 32, y + 34, 8, 8);
                     } else {
-                        ctx.fillRect(x + 16, y + 34, 8, 8);  // Leg 1
-                        ctx.fillRect(x + 32, y + 34, 8, 12); // Leg 2
+                        ctx.fillRect(x + 16, y + 34, 8, 8);
+                        ctx.fillRect(x + 32, y + 34, 8, 12);
                     }
                 }
             }
@@ -416,14 +651,12 @@
                 if (obstacle.type === 'cactus') {
                     switch (obstacle.subtype) {
                         case 'small':
-                            // Draw small cactus
                             ctx.fillRect(obstacle.x, obstacle.y, obstacle.width, obstacle.height);
                             ctx.fillRect(obstacle.x + 5, obstacle.y - 8, 6, 8);
                             ctx.fillRect(obstacle.x - 4, obstacle.y + 10, 8, 6);
                             ctx.fillRect(obstacle.x + obstacle.width - 4, obstacle.y + 15, 8, 6);
                             break;
                         case 'medium':
-                            // Draw two small cacti
                             ctx.fillRect(obstacle.x, obstacle.y, 18, 35);
                             ctx.fillRect(obstacle.x + 5, obstacle.y - 8, 6, 8);
                             ctx.fillRect(obstacle.x - 4, obstacle.y + 10, 8, 6);
@@ -432,7 +665,6 @@
                             ctx.fillRect(obstacle.x + 20 + 18 - 4, obstacle.y + 15, 8, 6);
                             break;
                         case 'large':
-                            // Draw a taller cactus
                             ctx.fillRect(obstacle.x, obstacle.y, obstacle.width, obstacle.height);
                             ctx.fillRect(obstacle.x + 8, obstacle.y - 10, 8, 10);
                             ctx.fillRect(obstacle.x - 6, obstacle.y + 15, 6, 15);
@@ -440,13 +672,12 @@
                             break;
                     }
                 } else if (obstacle.type === 'pterodactyl') {
-                    // Draw pterodactyl
                     ctx.fillRect(obstacle.x, obstacle.y, obstacle.width, obstacle.height);
-                    ctx.fillRect(obstacle.x - 10, obstacle.y + 4, 16, 3); // left wing
-                    ctx.fillRect(obstacle.x + obstacle.width - 6, obstacle.y + 4, 16, 3); // right wing
-                    ctx.fillRect(obstacle.x + 16, obstacle.y - 4, 8, 8); // head
+                    ctx.fillRect(obstacle.x - 10, obstacle.y + 4, 16, 3);
+                    ctx.fillRect(obstacle.x + obstacle.width - 6, obstacle.y + 4, 16, 3);
+                    ctx.fillRect(obstacle.x + 16, obstacle.y - 4, 8, 8);
                 } else if (obstacle.type === 'spring') {
-                    ctx.fillStyle = '#0000FF'; // Blue color for spring
+                    ctx.fillStyle = '#0000FF';
                     ctx.fillRect(obstacle.x, obstacle.y, obstacle.width, obstacle.height);
                 }
             });
@@ -483,12 +714,10 @@
         function drawStars() {
             if (isNight) {
                 stars.forEach(star => {
-                    // Twinkling effect
                     const twinkleIntensity = 0.5 + 0.5 * Math.sin(star.twinkle);
-                    // Use black color since invert filter will make it white in night mode
-                    ctx.fillStyle = `rgba(0, 0, 0, ${twinkleIntensity})`;
+                    // 야간모드에서는 흰색 별로 표시
+                    ctx.fillStyle = `rgba(255, 255, 255, ${twinkleIntensity})`;
                     
-                    // Draw star as a small cross
                     ctx.fillRect(star.x - star.size/2, star.y - 1, star.size, 2);
                     ctx.fillRect(star.x - 1, star.y - star.size/2, 2, star.size);
                     
@@ -500,13 +729,20 @@
         }
 
         function drawBackground() {
-            // Day/night cycle
-            if (Math.floor(gameTime / 1000) % 100 === 0 && gameTime % 1000 < 20) {
+            // Day/night cycle - 더 부드럽게 전환
+            if (Math.floor(gameTime / 1500) % 100 === 0 && gameTime % 1500 < 30) {
                 isNight = !isNight;
             }
             
-            canvas.style.background = isNight ? '#000' : '#fff';
-            ctx.filter = isNight ? 'invert(1)' : 'invert(0)';
+            // 배경색만 변경하고 invert 필터는 제거하여 번쩍임 해결
+            if (isNight) {
+                canvas.style.background = '#1a1a1a';
+                // UI 요소들의 색상을 야간모드에 맞게 조정
+                document.querySelector('.game-ui').style.color = '#ccc';
+            } else {
+                canvas.style.background = '#fff';
+                document.querySelector('.game-ui').style.color = '#535353';
+            }
         }
 
         // Game logic
@@ -524,40 +760,36 @@
         }
 
         function updateObstacles() {
-            // Move obstacles
             obstacles.forEach(obstacle => {
                 obstacle.x -= gameSpeed;
             });
 
-            // Remove off-screen obstacles
             for (let i = obstacles.length - 1; i >= 0; i--) {
                 if (obstacles[i].x + obstacles[i].width < 0) {
                     obstacles.splice(i, 1);
                 }
             }
 
-            // Add new obstacles
             obstacleTimer++;
             if (obstacleTimer >= obstacleInterval) {
                 const randomVal = Math.random();
                 let newObstacle = null;
 
-                // Force spring as first obstacle if not spawned yet
                 if (!hasSpawnedSpring) {
                     newObstacle = {
                         type: 'spring',
                         x: canvas.width,
-                        y: canvas.height - 30, // Adjust Y to be on the ground
+                        y: canvas.height - 30,
                         width: 20,
                         height: 20,
                         isCollected: false
                     };
                     hasSpawnedSpring = true;
-                } else if (randomVal < 0.6) { // More likely to be a cactus
+                } else if (randomVal < 0.6) {
                     const cactusTypes = [
                         { subtype: 'small', width: 18, height: 35, yOffset: 43 },
-                        { subtype: 'medium', width: 38, height: 35, yOffset: 43 }, // Two small cacti side by side
-                        { subtype: 'large', width: 24, height: 50, yOffset: 58 } // Taller cactus
+                        { subtype: 'medium', width: 38, height: 35, yOffset: 43 },
+                        { subtype: 'large', width: 24, height: 50, yOffset: 58 }
                     ];
                     const randomCactus = cactusTypes[Math.floor(Math.random() * cactusTypes.length)];
                     newObstacle = {
@@ -568,7 +800,7 @@
                         width: randomCactus.width,
                         height: randomCactus.height
                     };
-                } else { // Pterodactyl
+                } else {
                     const pteroHeight = [canvas.height - 45, canvas.height - 60, canvas.height - 75][Math.floor(Math.random() * 3)];
                     newObstacle = {
                         type: 'pterodactyl',
@@ -583,7 +815,7 @@
                     obstacles.push(newObstacle);
                 }
                 obstacleTimer = 0;
-                obstacleInterval = 80 + Math.random() * 70; // Randomize next obstacle time
+                obstacleInterval = 80 + Math.random() * 70;
             }
         }
 
@@ -637,7 +869,6 @@
                 playerRect.height = 46;
             }
 
-            // Iterate backward to safely remove elements
             for (let i = obstacles.length - 1; i >= 0; i--) {
                 const obstacle = obstacles[i];
                 if (playerRect.x < obstacle.x + obstacle.width &&
@@ -647,11 +878,10 @@
                     
                     if (obstacle.type === 'spring') {
                         isJumpBoostActive = true;
-                        jumpBoostTimer = 600; // 10 seconds * 60 frames/sec
+                        jumpBoostTimer = 600;
                         jumpBoostTimerDisplay.textContent = `JUMP BOOST: ${Math.ceil(jumpBoostTimer / 60)}s`;
-                        obstacles.splice(i, 1); // Remove the collected spring
-                        // Optional: play a sound or show a temporary message
-                    } else { // Collision with cactus or pterodactyl
+                        obstacles.splice(i, 1);
+                    } else {
                         gameOver();
                     }
                 }
@@ -662,7 +892,6 @@
             if (gameState === 'playing') {
                 const newScore = Math.floor(gameTime / 10);
                 
-                // Play score sound every 100 points
                 if (newScore > 0 && newScore % 100 === 0 && newScore > score) {
                     playScoreSound();
                 }
@@ -670,7 +899,6 @@
                 score = newScore;
                 currentScoreElement.textContent = String(score).padStart(5, '0');
                 
-                // Increase speed every 100 points
                 gameSpeed = 3 + Math.floor(score / 100) * 0.5;
                 
                 gameTime++;
@@ -688,7 +916,7 @@
                     vy: Math.sin(angle) * speed,
                     color: `hsl(${Math.random() * 360}, 100%, 50%)`,
                     size: Math.random() * 3 + 1,
-                    lifespan: 60 + Math.random() * 30, // in frames
+                    lifespan: 60 + Math.random() * 30,
                     gravity: 0.1
                 });
             }
@@ -718,7 +946,6 @@
 
         // Main game loop
         function gameLoop() {
-            // Clear canvas
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             
             if (gameState === 'playing') {
@@ -736,7 +963,7 @@
                     if (jumpBoostTimer <= 0) {
                         isJumpBoostActive = false;
                         jumpBoostTimer = 0;
-                        jumpBoostTimerDisplay.textContent = ''; // Clear timer display
+                        jumpBoostTimerDisplay.textContent = '';
                     }
                 }
 
@@ -761,7 +988,24 @@
             requestAnimationFrame(gameLoop);
         }
 
-        // Start the game loop
+        // Canvas 크기 조정 (모바일 최적화)
+        function resizeCanvas() {
+            const container = document.querySelector('.game-container');
+            const maxWidth = Math.min(window.innerWidth - 40, 480);
+            const maxHeight = Math.min(window.innerHeight - 120, 360);
+            const ratio = Math.min(maxWidth / 480, maxHeight / 360);
+            
+            canvas.style.width = (480 * ratio) + 'px';
+            canvas.style.height = (360 * ratio) + 'px';
+        }
+
+        // 초기 캔버스 크기 설정
+        resizeCanvas();
+        
+        // 화면 크기 변경 시 캔버스 크기 조정
+        window.addEventListener('resize', resizeCanvas);
+
+        // 게임 루프 시작
         gameLoop();
     </script>
 </body>
